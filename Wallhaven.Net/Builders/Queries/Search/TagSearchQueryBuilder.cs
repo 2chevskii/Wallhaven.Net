@@ -1,7 +1,10 @@
-﻿using System.Diagnostics.Tracing;
-
+﻿using Wallhaven.Net.Builders.Queries.Flags;
+using Wallhaven.Net.Builders.Queries.Search.Abstractions;
+using Wallhaven.Net.Builders.Queries.Search.Sorting;
+using Wallhaven.Net.Builders.Queries.Search.Sorting.Abstractions;
 using Wallhaven.Net.Extensions;
 using Wallhaven.Net.Models.Common;
+using Wallhaven.Net.Models.Common.Sorting;
 
 namespace Wallhaven.Net.Builders.Queries.Search;
 
@@ -13,26 +16,47 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
 
     public string Uploader { get; private init; }
     public FileType FileType { get; private init; }
+    public Category Categories { get; init; }
+    public Purity Purity { get; init; }
+    public QuerySortingMode SortingMode { get; init; }
+    public QuerySortingOrder SortingOrder { get; init; }
+    public string RandomSortingSeed { get; init; }
+    public TopListRange TopListSortingRange { get; init; }
+    public int Page { get; init; }
     public IReadOnlySet<string> Keywords => _keywords;
     public IReadOnlySet<string> IncludeTags => _include;
     public IReadOnlySet<string> ExcludeTags => _exclude;
 
-    internal TagSearchQueryBuilder(IInitialSearchQueryBuilder source)
+    internal TagSearchQueryBuilder(InitialSearchQueryBuilder source)
     {
-        Uploader  = source.Uploader;
-        FileType  = source.FileType;
-        _keywords = new HashSet<string>();
-        _include  = new HashSet<string>();
-        _exclude  = new HashSet<string>();
+        Uploader            = source.Uploader;
+        FileType            = source.FileType;
+        _keywords           = new HashSet<string>();
+        _include            = new HashSet<string>();
+        _exclude            = new HashSet<string>();
+        Categories          = source.Categories;
+        Purity              = source.Purity;
+        SortingMode         = source.SortingMode;
+        SortingOrder        = source.SortingOrder;
+        RandomSortingSeed   = source.RandomSortingSeed;
+        TopListSortingRange = source.TopListSortingRange;
+        Page                = source.Page;
     }
 
     private TagSearchQueryBuilder(TagSearchQueryBuilder source)
     {
-        Uploader  = source.Uploader;
-        FileType  = source.FileType;
-        _keywords = new HashSet<string>( source._keywords );
-        _include  = new HashSet<string>( source._include );
-        _exclude  = new HashSet<string>( source._exclude );
+        Uploader            = source.Uploader;
+        FileType            = source.FileType;
+        _keywords           = new HashSet<string>( source._keywords );
+        _include            = new HashSet<string>( source._include );
+        _exclude            = new HashSet<string>( source._exclude );
+        Categories          = source.Categories;
+        Purity              = source.Purity;
+        SortingMode         = source.SortingMode;
+        SortingOrder        = source.SortingOrder;
+        RandomSortingSeed   = source.RandomSortingSeed;
+        TopListSortingRange = source.TopListSortingRange;
+        Page                = source.Page;
     }
 
     public ITagSearchQueryBuilder WithUploader(string uploaderUsername) =>
@@ -44,6 +68,27 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
     new TagSearchQueryBuilder( this ) {
         FileType = fileType
     };
+
+    public ITagSearchQueryBuilder Configure<TFlags>(
+        Func<FlagsBuilder<TFlags>, FlagsBuilder<TFlags>> configureFlags
+    ) where TFlags : Enum
+    {
+        return configureFlags switch {
+                   Func<FlagsBuilder<Category>, FlagsBuilder<Category>> configureCategories => new
+                   TagSearchQueryBuilder( this ) {
+                       Categories = configureCategories(
+                           new FlagsBuilder<Category>(
+                               Category.Anime | Category.General | Category.People
+                           )
+                       )
+                       .Value
+                   },
+                   Func<FlagsBuilder<Purity>, FlagsBuilder<Purity>> configurePurity => new
+                   TagSearchQueryBuilder( this ) {
+                       Purity = configurePurity( new FlagsBuilder<Purity>( Purity.Sfw ) ).Value
+                   }
+               };
+    }
 
     /*TODO: Validate input*/
     public ITagSearchQueryBuilder WithKeyword(string keyword, bool append = false)
@@ -173,4 +218,46 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
 
         return builder;
     }
+
+    public ITagSearchQueryBuilder UseSortingBehaviour<TSorting>(
+        Func<IBasicSortingBuilder, TSorting> configureSorting
+    ) where TSorting : ISortingBuilder<TSorting>
+    {
+        var input = new BasicSortingBuilder();
+
+        switch (configureSorting)
+        {
+            case Func<IBasicSortingBuilder, IRandomSortingBuilder> configureRandomSorting:
+                var randomResult = (RandomSortingBuilder) configureRandomSorting( input );
+
+                return new TagSearchQueryBuilder( this ) {
+                    SortingMode       = QuerySortingMode.Random,
+                    SortingOrder      = randomResult.Order,
+                    RandomSortingSeed = randomResult.Seed
+                };
+
+            case Func<IBasicSortingBuilder, IToplistSortingBuilder> configureToplistSorting:
+                var toplistResult = (ToplistSortingBuilder) configureToplistSorting( input );
+
+                return new TagSearchQueryBuilder( this ) {
+                    SortingMode         = QuerySortingMode.TopList,
+                    SortingOrder        = toplistResult.Order,
+                    TopListSortingRange = toplistResult.Range
+                };
+
+            default:
+                var basicResult =
+                (BasicSortingBuilder) (IBasicSortingBuilder) configureSorting( input );
+
+                return new TagSearchQueryBuilder( this ) {
+                    SortingMode  = basicResult.Mode,
+                    SortingOrder = basicResult.Order
+                };
+        }
+    }
+
+    public ITagSearchQueryBuilder WithPage(int page) =>
+    new TagSearchQueryBuilder( this ) {
+        Page = page
+    };
 }

@@ -1,6 +1,6 @@
-﻿using Wallhaven.Net.Builders.Queries.Search.Transitions;
+﻿using Wallhaven.Net.Builders.Queries.Search.Abstractions.Transitions;
 
-namespace Wallhaven.Net.Builders.Queries.Search;
+namespace Wallhaven.Net.Builders.Queries.Search.Abstractions;
 
 public interface IInitialSearchQueryBuilder : ISearchQueryBuilder<IInitialSearchQueryBuilder>,
                                               ISupportsExactTagQueryTransition,

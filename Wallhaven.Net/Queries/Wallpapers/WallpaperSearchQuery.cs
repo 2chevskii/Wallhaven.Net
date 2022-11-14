@@ -21,7 +21,7 @@ public class WallpaperSearchQuery : IWallhavenQuery
     public Category Categories { get; init; }
     public Purity Purity { get; init; }
     public string? SimilarToWallpaperId { get; init; }
-    public QuerySortMode Sorting { get; init; }
+    public QuerySortingMode Sorting { get; init; }
     public QuerySortingOrder Order { get; init; }
     public TopListRange TopRange { get; init; }
     public ResolutionQueryMode ResolutionQueryMode { get; init; }
@@ -88,7 +88,7 @@ public class WallpaperSearchQuery : IWallhavenQuery
                   .SetQueryParam( "sorting", Sorting.ToQueryParam() )
                   .SetQueryParam( "order", Order.ToQueryParam() );
 
-        if ( Sorting is QuerySortMode.TopList )
+        if ( Sorting is QuerySortingMode.TopList )
         {
             requestUrl.SetQueryParam( "topRange", TopRange.ToQueryParam() );
         }
@@ -118,7 +118,7 @@ public class WallpaperSearchQuery : IWallhavenQuery
 
         if ( Page is not 0 ) { requestUrl.SetQueryParam( "page", Page.ToString() ); }
 
-        if ( Sorting is QuerySortMode.Random && Seed is not null )
+        if ( Sorting is QuerySortingMode.Random && Seed is not null )
         {
             requestUrl.SetQueryParam( "seed", Seed );
         }

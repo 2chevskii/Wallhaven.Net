@@ -1,10 +1,10 @@
-﻿namespace Wallhaven.Net.Builders.Queries.Search;
+﻿namespace Wallhaven.Net.Builders.Queries.Search.Abstractions;
 
 public interface ITagSearchQueryBuilder : ISearchQueryBuilder<ITagSearchQueryBuilder>
 {
-    IReadOnlySet<string> Keywords { get; }
+    /*IReadOnlySet<string> Keywords { get; }
     IReadOnlySet<string> IncludeTags { get; }
-    IReadOnlySet<string> ExcludeTags { get; }
+    IReadOnlySet<string> ExcludeTags { get; }*/
 
     ITagSearchQueryBuilder WithKeyword(string keyword, bool append = false);
 

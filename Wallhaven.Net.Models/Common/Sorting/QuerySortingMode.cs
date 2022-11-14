@@ -1,7 +1,7 @@
 ﻿namespace Wallhaven.Net.Models.Common.Sorting;
 
 // Default is upload date
-public enum QuerySortMode
+public enum QuerySortingMode
 {
     Relevance,
     Random,

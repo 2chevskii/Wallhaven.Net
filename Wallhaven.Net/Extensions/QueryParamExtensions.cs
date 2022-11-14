@@ -28,15 +28,15 @@ public static class QueryParamExtensions
         return Convert.ToString( (int) category, 2 );
     }
 
-    public static string ToQueryParam(this QuerySortMode sortMode)
+    public static string ToQueryParam(this QuerySortingMode sortingMode)
     {
-        return sortMode switch {
-                   QuerySortMode.Favorites => "favorites",
-                   QuerySortMode.Hot       => "hot",
-                   QuerySortMode.Random    => "random",
-                   QuerySortMode.Views     => "views",
-                   QuerySortMode.Relevance => "relevance",
-                   QuerySortMode.TopList   => "toplist"
+        return sortingMode switch {
+                   QuerySortingMode.Favorites => "favorites",
+                   QuerySortingMode.Hot       => "hot",
+                   QuerySortingMode.Random    => "random",
+                   QuerySortingMode.Views     => "views",
+                   QuerySortingMode.Relevance => "relevance",
+                   QuerySortingMode.TopList   => "toplist"
                };
     }
 
