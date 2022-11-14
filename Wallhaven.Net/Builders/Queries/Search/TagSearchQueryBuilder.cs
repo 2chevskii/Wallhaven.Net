@@ -1,9 +1,12 @@
 ﻿using Wallhaven.Net.Builders.Queries.Flags;
 using Wallhaven.Net.Builders.Queries.Search.Abstractions;
+using Wallhaven.Net.Builders.Queries.Search.Screen;
+using Wallhaven.Net.Builders.Queries.Search.Screen.Resolutions;
 using Wallhaven.Net.Builders.Queries.Search.Sorting;
 using Wallhaven.Net.Builders.Queries.Search.Sorting.Abstractions;
 using Wallhaven.Net.Extensions;
 using Wallhaven.Net.Models.Common;
+using Wallhaven.Net.Models.Common.Screen;
 using Wallhaven.Net.Models.Common.Sorting;
 
 namespace Wallhaven.Net.Builders.Queries.Search;
@@ -26,6 +29,9 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
     public IReadOnlySet<string> Keywords => _keywords;
     public IReadOnlySet<string> IncludeTags => _include;
     public IReadOnlySet<string> ExcludeTags => _exclude;
+    public ResolutionQueryMode ResolutionQueryMode { get; init; }
+    public HashSet<Resolution> Resolutions { get; }
+    public HashSet<AspectRatio> Ratios { get; }
 
     internal TagSearchQueryBuilder(InitialSearchQueryBuilder source)
     {
@@ -41,6 +47,9 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
         RandomSortingSeed   = source.RandomSortingSeed;
         TopListSortingRange = source.TopListSortingRange;
         Page                = source.Page;
+        ResolutionQueryMode = source.ResolutionQueryMode;
+        Resolutions         = new HashSet<Resolution>( source.Resolutions );
+        Ratios              = new HashSet<AspectRatio>(source.Ratios);
     }
 
     private TagSearchQueryBuilder(TagSearchQueryBuilder source)
@@ -57,6 +66,9 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
         RandomSortingSeed   = source.RandomSortingSeed;
         TopListSortingRange = source.TopListSortingRange;
         Page                = source.Page;
+        ResolutionQueryMode = source.ResolutionQueryMode;
+        Resolutions         = new HashSet<Resolution>( source.Resolutions );
+        Ratios              = new HashSet<AspectRatio>(source.Ratios);
     }
 
     public ITagSearchQueryBuilder WithUploader(string uploaderUsername) =>
@@ -91,38 +103,29 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
     }
 
     /*TODO: Validate input*/
-    public ITagSearchQueryBuilder WithKeyword(string keyword, bool append = false)
+    public ITagSearchQueryBuilder WithKeyword(string keyword)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._keywords.Add( keyword, append );
+        builder._keywords.Add( keyword, true );
 
         return builder;
     }
 
-    public ITagSearchQueryBuilder WithKeywords(
-        string keyword1,
-        string keyword2,
-        bool append = false
-    )
+    public ITagSearchQueryBuilder WithKeywords(string keyword1, string keyword2)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._keywords.AddRange( keyword1, keyword2, append );
+        builder._keywords.AddRange( keyword1, keyword2, true );
 
         return builder;
     }
 
-    public ITagSearchQueryBuilder WithKeywords(
-        string keyword1,
-        string keyword2,
-        string keyword3,
-        bool append = false
-    )
+    public ITagSearchQueryBuilder WithKeywords(string keyword1, string keyword2, string keyword3)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._keywords.AddRange( keyword1, keyword2, keyword3, append );
+        builder._keywords.AddRange( keyword1, keyword2, keyword3, true );
 
         return builder;
     }
@@ -137,34 +140,29 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
         return builder;
     }
 
-    public ITagSearchQueryBuilder MustInclude(string tag, bool append = false)
+    public ITagSearchQueryBuilder MustInclude(string tag)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._include.Add( tag, append );
+        builder._include.Add( tag );
 
         return builder;
     }
 
-    public ITagSearchQueryBuilder MustInclude(string tag1, string tag2, bool append = false)
+    public ITagSearchQueryBuilder MustInclude(string tag1, string tag2)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._include.AddRange( tag1, tag2, append );
+        builder._include.AddRange( tag1, tag2, true );
 
         return builder;
     }
 
-    public ITagSearchQueryBuilder MustInclude(
-        string tag1,
-        string tag2,
-        string tag3,
-        bool append = false
-    )
+    public ITagSearchQueryBuilder MustInclude(string tag1, string tag2, string tag3)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._include.AddRange( tag1, tag2, tag3, append );
+        builder._include.AddRange( tag1, tag2, tag3, true );
 
         return builder;
     }
@@ -178,34 +176,29 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
         return builder;
     }
 
-    public ITagSearchQueryBuilder MustExclude(string tag, bool append = false)
+    public ITagSearchQueryBuilder MustExclude(string tag)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._exclude.Add( tag, append );
+        builder._exclude.Add( tag );
 
         return builder;
     }
 
-    public ITagSearchQueryBuilder MustExclude(string tag1, string tag2, bool append = false)
+    public ITagSearchQueryBuilder MustExclude(string tag1, string tag2)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._exclude.AddRange( tag1, tag2, append );
+        builder._exclude.AddRange( tag1, tag2, true );
 
         return builder;
     }
 
-    public ITagSearchQueryBuilder MustExclude(
-        string tag1,
-        string tag2,
-        string tag3,
-        bool append = false
-    )
+    public ITagSearchQueryBuilder MustExclude(string tag1, string tag2, string tag3)
     {
         var builder = new TagSearchQueryBuilder( this );
 
-        builder._exclude.AddRange( tag1, tag2, tag3, append );
+        builder._exclude.AddRange( tag1, tag2, tag3, true );
 
         return builder;
     }
@@ -260,4 +253,55 @@ public class TagSearchQueryBuilder : ITagSearchQueryBuilder
     new TagSearchQueryBuilder( this ) {
         Page = page
     };
+
+    public ITagSearchQueryBuilder ConfigureAspectRatios(
+        Func<IAspectRatiosSearchConfiguration, IAspectRatiosSearchConfiguration>
+        configureAspectRatios
+    )
+    {
+        var result =
+        (AspectRatiosSearchConfiguration) configureAspectRatios(
+            new AspectRatiosSearchConfiguration()
+        );
+
+        var builder = new TagSearchQueryBuilder( this );
+
+        builder.Ratios.AddRange( false, result.Ratios.ToArray() );
+
+        return builder;
+    }
+
+    public ITagSearchQueryBuilder ConfigureResolutions(
+        Func<IResolutionConfiguration, IAtLeastResolutionConfiguration> configureResolutions
+    )
+    {
+        var result =
+        (AtLeastResolutionConfiguration) configureResolutions( new ResolutionConfiguration() );
+
+        var builder = new TagSearchQueryBuilder( this ) {
+            ResolutionQueryMode = ResolutionQueryMode.AtLeast
+        };
+
+        builder.Resolutions.Clear();
+        builder.Resolutions.Add( result.Resolution );
+
+        return builder;
+    }
+
+    public ITagSearchQueryBuilder ConfigureResolutions(
+        Func<IResolutionConfiguration, IExactResolutionConfiguration> configureResolutions
+    )
+    {
+        var result =
+        (ExactResolutionConfiguration) configureResolutions( new ResolutionConfiguration() );
+
+        var builder = new TagSearchQueryBuilder( this ) {
+            ResolutionQueryMode = ResolutionQueryMode.Exact
+        };
+
+        builder.Resolutions.Clear();
+        builder.Resolutions.AddRange( false, result.Resolutions.ToArray() );
+
+        return builder;
+    }
 }

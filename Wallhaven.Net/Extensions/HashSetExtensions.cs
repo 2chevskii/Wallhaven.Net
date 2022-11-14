@@ -40,7 +40,14 @@ public static class HashSetExtensions
         self.Add( item3 );
     }
 
-    public static void AddRange<T>(this HashSet<T> self, bool append=false, params T[] items)
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="self"></param>
+    /// <param name="append">Indicates whether to append given <see cref="items"/> to <see cref="self"/>, or clear destination before adding</param>
+    /// <param name="items"></param>
+    /// <typeparam name="T"></typeparam>
+    public static void AddRange<T>(this HashSet<T> self, bool append = true, params T[] items)
     {
         if ( !append )
             self.Clear();

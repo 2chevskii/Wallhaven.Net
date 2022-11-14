@@ -2,47 +2,28 @@
 
 public interface ITagSearchQueryBuilder : ISearchQueryBuilder<ITagSearchQueryBuilder>
 {
-    /*IReadOnlySet<string> Keywords { get; }
-    IReadOnlySet<string> IncludeTags { get; }
-    IReadOnlySet<string> ExcludeTags { get; }*/
+    ITagSearchQueryBuilder WithKeyword(string keyword);
 
-    ITagSearchQueryBuilder WithKeyword(string keyword, bool append = false);
+    ITagSearchQueryBuilder WithKeywords(string keyword1, string keyword2);
 
-    ITagSearchQueryBuilder WithKeywords(string keyword1, string keyword2, bool append = false);
-
-    ITagSearchQueryBuilder WithKeywords(
-        string keyword1,
-        string keyword2,
-        string keyword3,
-        bool append = false
-    );
+    ITagSearchQueryBuilder WithKeywords(string keyword1, string keyword2, string keyword3);
 
     // Assumes append=false
     ITagSearchQueryBuilder WithKeywords(params string[] keywords);
 
-    ITagSearchQueryBuilder MustInclude(string tag, bool append = false);
+    ITagSearchQueryBuilder MustInclude(string tag);
 
-    ITagSearchQueryBuilder MustInclude(string tag1, string tag2, bool append = false);
+    ITagSearchQueryBuilder MustInclude(string tag1, string tag2);
 
-    ITagSearchQueryBuilder MustInclude(
-        string tag1,
-        string tag2,
-        string tag3,
-        bool append = false
-    );
+    ITagSearchQueryBuilder MustInclude(string tag1, string tag2, string tag3);
 
     ITagSearchQueryBuilder MustInclude(params string[] tags);
 
-    ITagSearchQueryBuilder MustExclude(string tag, bool append = false);
+    ITagSearchQueryBuilder MustExclude(string tag);
 
-    ITagSearchQueryBuilder MustExclude(string tag1, string tag2, bool append = false);
+    ITagSearchQueryBuilder MustExclude(string tag1, string tag2);
 
-    ITagSearchQueryBuilder MustExclude(
-        string tag1,
-        string tag2,
-        string tag3,
-        bool append = false
-    );
+    ITagSearchQueryBuilder MustExclude(string tag1, string tag2, string tag3);
 
     ITagSearchQueryBuilder MustExclude(params string[] tags);
 }

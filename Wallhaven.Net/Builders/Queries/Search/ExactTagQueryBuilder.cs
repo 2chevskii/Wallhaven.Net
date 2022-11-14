@@ -1,8 +1,12 @@
 ﻿using Wallhaven.Net.Builders.Queries.Flags;
 using Wallhaven.Net.Builders.Queries.Search.Abstractions;
+using Wallhaven.Net.Builders.Queries.Search.Screen;
+using Wallhaven.Net.Builders.Queries.Search.Screen.Resolutions;
 using Wallhaven.Net.Builders.Queries.Search.Sorting;
 using Wallhaven.Net.Builders.Queries.Search.Sorting.Abstractions;
+using Wallhaven.Net.Extensions;
 using Wallhaven.Net.Models.Common;
+using Wallhaven.Net.Models.Common.Screen;
 using Wallhaven.Net.Models.Common.Sorting;
 
 namespace Wallhaven.Net.Builders.Queries.Search;
@@ -19,6 +23,9 @@ public class ExactTagQueryBuilder : IExactTagQueryBuilder
     public string RandomSortingSeed { get; init; }
     public TopListRange TopListSortingRange { get; init; }
     public int Page { get; init; }
+    public ResolutionQueryMode ResolutionQueryMode { get; init; }
+    public HashSet<Resolution> Resolutions { get; }
+    public HashSet<AspectRatio> Ratios { get; }
 
     internal ExactTagQueryBuilder(InitialSearchQueryBuilder source)
     {
@@ -32,6 +39,9 @@ public class ExactTagQueryBuilder : IExactTagQueryBuilder
         RandomSortingSeed   = source.RandomSortingSeed;
         TopListSortingRange = source.TopListSortingRange;
         Page                = source.Page;
+        ResolutionQueryMode = source.ResolutionQueryMode;
+        Resolutions         = new HashSet<Resolution>( source.Resolutions );
+        Ratios              = new HashSet<AspectRatio>(source.Ratios);
     }
 
     private ExactTagQueryBuilder(ExactTagQueryBuilder source)
@@ -46,6 +56,9 @@ public class ExactTagQueryBuilder : IExactTagQueryBuilder
         RandomSortingSeed   = source.RandomSortingSeed;
         TopListSortingRange = source.TopListSortingRange;
         Page                = source.Page;
+        ResolutionQueryMode = source.ResolutionQueryMode;
+        Resolutions         = new HashSet<Resolution>( source.Resolutions );
+        Ratios              = new HashSet<AspectRatio>( source.Ratios );
     }
 
     public IExactTagQueryBuilder WithUploader(string uploaderUsername) =>
@@ -125,4 +138,55 @@ public class ExactTagQueryBuilder : IExactTagQueryBuilder
     new ExactTagQueryBuilder( this ) {
         TagId = tagId
     };
+
+    public IExactTagQueryBuilder ConfigureAspectRatios(
+        Func<IAspectRatiosSearchConfiguration, IAspectRatiosSearchConfiguration>
+        configureAspectRatios
+    )
+    {
+        var result =
+        (AspectRatiosSearchConfiguration) configureAspectRatios(
+            new AspectRatiosSearchConfiguration()
+        );
+
+        var builder = new ExactTagQueryBuilder( this );
+
+        builder.Ratios.AddRange( false, result.Ratios.ToArray() );
+
+        return builder;
+    }
+
+    public IExactTagQueryBuilder ConfigureResolutions(
+        Func<IResolutionConfiguration, IAtLeastResolutionConfiguration> configureResolutions
+    )
+    {
+        var result =
+        (AtLeastResolutionConfiguration) configureResolutions( new ResolutionConfiguration() );
+
+        var builder = new ExactTagQueryBuilder( this ) {
+            ResolutionQueryMode = ResolutionQueryMode.AtLeast
+        };
+
+        builder.Resolutions.Clear();
+        builder.Resolutions.Add( result.Resolution );
+
+        return builder;
+    }
+
+    public IExactTagQueryBuilder ConfigureResolutions(
+        Func<IResolutionConfiguration, IExactResolutionConfiguration> configureResolutions
+    )
+    {
+        var result =
+        (ExactResolutionConfiguration) configureResolutions( new ResolutionConfiguration() );
+
+        var builder = new ExactTagQueryBuilder( this ) {
+            ResolutionQueryMode = ResolutionQueryMode.Exact
+        };
+
+        builder.Resolutions.Clear();
+        builder.Resolutions.AddRange( false, result.Resolutions.ToArray() );
+
+        return builder;
+    }
 }

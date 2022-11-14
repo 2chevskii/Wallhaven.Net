@@ -1,8 +1,12 @@
 ﻿using Wallhaven.Net.Builders.Queries.Flags;
 using Wallhaven.Net.Builders.Queries.Search.Abstractions;
+using Wallhaven.Net.Builders.Queries.Search.Screen;
+using Wallhaven.Net.Builders.Queries.Search.Screen.Resolutions;
 using Wallhaven.Net.Builders.Queries.Search.Sorting;
 using Wallhaven.Net.Builders.Queries.Search.Sorting.Abstractions;
+using Wallhaven.Net.Extensions;
 using Wallhaven.Net.Models.Common;
+using Wallhaven.Net.Models.Common.Screen;
 using Wallhaven.Net.Models.Common.Sorting;
 
 namespace Wallhaven.Net.Builders.Queries.Search;
@@ -20,6 +24,10 @@ public class SimilarToQueryBuilder : ISimilarToQueryBuilder
     public TopListRange TopListSortingRange { get; init; }
     public int Page { get; init; }
 
+    public ResolutionQueryMode ResolutionQueryMode { get; init; }
+    public HashSet<Resolution> Resolutions { get; }
+    public HashSet<AspectRatio> Ratios { get; }
+
     internal SimilarToQueryBuilder(InitialSearchQueryBuilder source)
     {
         Uploader            = source.Uploader;
@@ -32,6 +40,9 @@ public class SimilarToQueryBuilder : ISimilarToQueryBuilder
         RandomSortingSeed   = source.RandomSortingSeed;
         TopListSortingRange = source.TopListSortingRange;
         Page                = source.Page;
+        ResolutionQueryMode = source.ResolutionQueryMode;
+        Resolutions         = new HashSet<Resolution>( source.Resolutions );
+        Ratios              = new HashSet<AspectRatio>(source.Ratios);
     }
 
     private SimilarToQueryBuilder(SimilarToQueryBuilder source)
@@ -46,6 +57,9 @@ public class SimilarToQueryBuilder : ISimilarToQueryBuilder
         RandomSortingSeed   = source.RandomSortingSeed;
         TopListSortingRange = source.TopListSortingRange;
         Page                = source.Page;
+        ResolutionQueryMode = source.ResolutionQueryMode;
+        Resolutions         = new HashSet<Resolution>( source.Resolutions );
+        Ratios              = new HashSet<AspectRatio>(source.Ratios);
     }
 
     public ISimilarToQueryBuilder WithUploader(string uploaderUsername) =>
@@ -125,4 +139,55 @@ public class SimilarToQueryBuilder : ISimilarToQueryBuilder
     new SimilarToQueryBuilder( this ) {
         WallpaperId = wallpaperId
     };
+
+    public ISimilarToQueryBuilder ConfigureAspectRatios(
+        Func<IAspectRatiosSearchConfiguration, IAspectRatiosSearchConfiguration>
+        configureAspectRatios
+    )
+    {
+        var result =
+        (AspectRatiosSearchConfiguration) configureAspectRatios(
+            new AspectRatiosSearchConfiguration()
+        );
+
+        var builder = new SimilarToQueryBuilder( this );
+
+        builder.Ratios.AddRange( false, result.Ratios.ToArray() );
+
+        return builder;
+    }
+
+    public ISimilarToQueryBuilder ConfigureResolutions(
+        Func<IResolutionConfiguration, IAtLeastResolutionConfiguration> configureResolutions
+    )
+    {
+        var result =
+        (AtLeastResolutionConfiguration) configureResolutions( new ResolutionConfiguration() );
+
+        var builder = new SimilarToQueryBuilder( this ) {
+            ResolutionQueryMode = ResolutionQueryMode.AtLeast
+        };
+
+        builder.Resolutions.Clear();
+        builder.Resolutions.Add( result.Resolution );
+
+        return builder;
+    }
+
+    public ISimilarToQueryBuilder ConfigureResolutions(
+        Func<IResolutionConfiguration, IExactResolutionConfiguration> configureResolutions
+    )
+    {
+        var result =
+        (ExactResolutionConfiguration) configureResolutions( new ResolutionConfiguration() );
+
+        var builder = new SimilarToQueryBuilder( this ) {
+            ResolutionQueryMode = ResolutionQueryMode.Exact
+        };
+
+        builder.Resolutions.Clear();
+        builder.Resolutions.AddRange( false, result.Resolutions.ToArray() );
+
+        return builder;
+    }
 }

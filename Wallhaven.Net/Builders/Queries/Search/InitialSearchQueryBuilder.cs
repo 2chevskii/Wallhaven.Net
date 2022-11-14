@@ -1,10 +1,15 @@
-﻿using System.Security.AccessControl;
+﻿using System.Diagnostics.Tracing;
+using System.Security.AccessControl;
 
 using Wallhaven.Net.Builders.Queries.Flags;
 using Wallhaven.Net.Builders.Queries.Search.Abstractions;
+using Wallhaven.Net.Builders.Queries.Search.Screen;
+using Wallhaven.Net.Builders.Queries.Search.Screen.Resolutions;
 using Wallhaven.Net.Builders.Queries.Search.Sorting;
 using Wallhaven.Net.Builders.Queries.Search.Sorting.Abstractions;
+using Wallhaven.Net.Extensions;
 using Wallhaven.Net.Models.Common;
+using Wallhaven.Net.Models.Common.Screen;
 using Wallhaven.Net.Models.Common.Sorting;
 
 namespace Wallhaven.Net.Builders.Queries.Search;
@@ -21,6 +26,9 @@ public class InitialSearchQueryBuilder : IInitialSearchQueryBuilder
     public string RandomSortingSeed { get; init; }
     public TopListRange TopListSortingRange { get; init; }
     public int Page { get; init; }
+    public ResolutionQueryMode ResolutionQueryMode { get; init; }
+    public HashSet<Resolution> Resolutions { get; }
+    public HashSet<AspectRatio> Ratios { get; }
 
     internal InitialSearchQueryBuilder()
     {
@@ -33,10 +41,13 @@ public class InitialSearchQueryBuilder : IInitialSearchQueryBuilder
         RandomSortingSeed   = string.Empty;
         TopListSortingRange = TopListRange.Month;
         Page                = 1;
+        ResolutionQueryMode = ResolutionQueryMode.Exact;
+        Resolutions         = new HashSet<Resolution>();
+        Ratios              = new HashSet<AspectRatio>();
     }
 
     /*Copy constructor*/
-    protected InitialSearchQueryBuilder(InitialSearchQueryBuilder source)
+    private InitialSearchQueryBuilder(InitialSearchQueryBuilder source)
     {
         Uploader            = source.Uploader;
         FileType            = source.FileType;
@@ -47,6 +58,9 @@ public class InitialSearchQueryBuilder : IInitialSearchQueryBuilder
         RandomSortingSeed   = source.RandomSortingSeed;
         TopListSortingRange = source.TopListSortingRange;
         Page                = source.Page;
+        ResolutionQueryMode = ResolutionQueryMode.Exact;
+        Resolutions         = new HashSet<Resolution>( source.Resolutions );
+        Ratios              = new HashSet<AspectRatio>( source.Ratios );
     }
 
     public IInitialSearchQueryBuilder WithUploader(string username)
@@ -70,7 +84,11 @@ public class InitialSearchQueryBuilder : IInitialSearchQueryBuilder
         return configureFlags switch {
                    Func<FlagsBuilder<Category>, FlagsBuilder<Category>> configureCategories => new
                    InitialSearchQueryBuilder( this ) {
-                       Categories = configureCategories( new FlagsBuilder<Category>( Category.Anime | Category.General | Category.People ) )
+                       Categories = configureCategories(
+                           new FlagsBuilder<Category>(
+                               Category.Anime | Category.General | Category.People
+                           )
+                       )
                        .Value
                    },
                    Func<FlagsBuilder<Purity>, FlagsBuilder<Purity>> configurePurity => new
@@ -127,4 +145,55 @@ public class InitialSearchQueryBuilder : IInitialSearchQueryBuilder
     public ITagSearchQueryBuilder AsTagSearchQuery() => new TagSearchQueryBuilder( this );
 
     public ISimilarToQueryBuilder AsSimilarToQuery() => new SimilarToQueryBuilder( this );
+
+    public IInitialSearchQueryBuilder ConfigureAspectRatios(
+        Func<IAspectRatiosSearchConfiguration, IAspectRatiosSearchConfiguration>
+        configureAspectRatios
+    )
+    {
+        var result =
+        (AspectRatiosSearchConfiguration) configureAspectRatios(
+            new AspectRatiosSearchConfiguration()
+        );
+
+        var builder = new InitialSearchQueryBuilder( this );
+
+        builder.Ratios.AddRange( false, result.Ratios.ToArray() );
+
+        return builder;
+    }
+
+    public IInitialSearchQueryBuilder ConfigureResolutions(
+        Func<IResolutionConfiguration, IAtLeastResolutionConfiguration> configureResolutions
+    )
+    {
+        var result =
+        (AtLeastResolutionConfiguration) configureResolutions( new ResolutionConfiguration() );
+
+        var builder = new InitialSearchQueryBuilder( this ) {
+            ResolutionQueryMode = ResolutionQueryMode.AtLeast
+        };
+
+        builder.Resolutions.Clear();
+        builder.Resolutions.Add( result.Resolution );
+
+        return builder;
+    }
+
+    public IInitialSearchQueryBuilder ConfigureResolutions(
+        Func<IResolutionConfiguration, IExactResolutionConfiguration> configureResolutions
+    )
+    {
+        var result =
+        (ExactResolutionConfiguration) configureResolutions( new ResolutionConfiguration() );
+
+        var builder = new InitialSearchQueryBuilder( this ) {
+            ResolutionQueryMode = ResolutionQueryMode.Exact
+        };
+
+        builder.Resolutions.Clear();
+        builder.Resolutions.AddRange( false, result.Resolutions.ToArray() );
+
+        return builder;
+    }
 }
