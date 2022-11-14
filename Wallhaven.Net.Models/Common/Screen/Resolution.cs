@@ -17,6 +17,8 @@ public readonly struct Resolution
         Height = height;
     }
 
+    public override string ToString() => throw new NotImplementedException();
+
     public static class Ultrawide
     {
         public static readonly Resolution _2560x1080 = new Resolution( 2560, 1080 );
